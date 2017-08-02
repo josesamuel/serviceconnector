@@ -7,7 +7,16 @@ import android.os.IInterface;
  *
  * @see ServiceConnector
  */
-interface ServiceConnectorListener {
+abstract class ServiceConnectorListener {
+
+    private Object target;
+
+    /**
+     * Initialize the listener for the given target
+     */
+    protected ServiceConnectorListener(Object target) {
+        this.target = target;
+    }
 
     /**
      * Called when a service is connected
@@ -16,7 +25,7 @@ interface ServiceConnectorListener {
      * @param serviceObject    Service Object
      * @param serviceConnector ServiceConnector
      */
-    void onServiceConnected(String serviceIntent, IInterface serviceObject, ServiceConnector serviceConnector);
+    abstract void onServiceConnected(String serviceIntent, IInterface serviceObject, ServiceConnector serviceConnector);
 
     /**
      * Called when service is disconnected
@@ -24,6 +33,12 @@ interface ServiceConnectorListener {
      * @param serviceIntent    Service intent
      * @param serviceConnector ServiceConnector
      */
-    void onServiceDisconnected(String serviceIntent, ServiceConnector serviceConnector);
+    abstract void onServiceDisconnected(String serviceIntent, ServiceConnector serviceConnector);
 
+    /**
+     * Returns if the given target is same as the target used by this
+     */
+    boolean isSameTarget(Object target) {
+        return target == this.target;
+    }
 }

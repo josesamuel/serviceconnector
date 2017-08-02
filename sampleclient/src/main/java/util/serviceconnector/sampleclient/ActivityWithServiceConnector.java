@@ -44,4 +44,10 @@ public class ActivityWithServiceConnector extends Activity {
         setContentView(R.layout.activity_without_service_connector);
         ServiceConnector.bind(this, this);
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        ServiceConnector.unbind(this);
+    }
 }

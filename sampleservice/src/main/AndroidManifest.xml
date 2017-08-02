@@ -7,12 +7,23 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true">
+
         <service
             android:name=".EchoService"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="util.serviceconnector.ECHO_SERVICE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".MathService"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="util.serviceconnector.MATH_SERVICE" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>

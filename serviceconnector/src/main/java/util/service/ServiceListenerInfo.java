@@ -8,7 +8,7 @@ import java.lang.reflect.Method;
 /**
  * Wraps the method that is annotated with  {@link util.service.annotation.ServiceConnectionCallback}
  */
-class ServiceListenerInfo implements ServiceConnectorListener {
+class ServiceListenerInfo extends ServiceConnectorListener {
 
     private static final String TAG = ServiceConnector.class.getSimpleName();
     private Method listenerMethod;
@@ -19,6 +19,7 @@ class ServiceListenerInfo implements ServiceConnectorListener {
      * to be called, and the target object
      */
     ServiceListenerInfo(Method listenerMethod, Object target) {
+        super(target);
         this.listenerMethod = listenerMethod;
         this.target = target;
         if (!listenerMethod.isAccessible()) {

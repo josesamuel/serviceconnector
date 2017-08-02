@@ -8,9 +8,12 @@ import android.util.Log;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -60,6 +63,7 @@ import util.service.handler.ServiceListener;
 public final class ServiceConnector implements ServiceListener {
 
     private static final String TAG = "ServiceConnector";
+    private static boolean ENABLE_DEBUG = false;
     //singleton instance
     private static ServiceConnector serviceConnector;
     private ExecutorService executor;
@@ -77,9 +81,9 @@ public final class ServiceConnector implements ServiceListener {
      */
     private ServiceConnector() {
         executor = Executors.newCachedThreadPool();
-        serviceInfoMap = new HashMap<>();
-        serviceHandlerMap = new HashMap<>();
-        serviceCallbacks = new ArrayList<>();
+        serviceInfoMap = new ConcurrentHashMap<>();
+        serviceHandlerMap = new ConcurrentHashMap<>();
+        serviceCallbacks = new CopyOnWriteArrayList<>();
     }
 
     /**
@@ -104,15 +108,16 @@ public final class ServiceConnector implements ServiceListener {
      * @param context Context used to connect to service
      */
     public static void bind(Object target, Context context) {
-        getInstance().initListeners(target);
-        getInstance().initServiceHandlers(target, context);
+        getInstance().bindTarget(target, context);
     }
 
     /**
-     * Disconnects from all the services connected by this {@link ServiceConnector}
+     * Disconnects from all the services bounded to this target.
+     * Any services that are no more bounded to any other targets will
+     * be disconnected.
      */
-    public static void unbind() {
-        getInstance().disconnectServices();
+    public static void unbind(Object target) {
+        getInstance().unbindTarget(target);
     }
 
     /**
@@ -149,6 +154,13 @@ public final class ServiceConnector implements ServiceListener {
      */
     public static void waitForAllConnected(long timeout) throws InterruptedException {
         getInstance().waitForAllServiceConnected(timeout);
+    }
+
+    /**
+     * Call to enable or disable debug logs
+     */
+    public static void setEnableDebug(boolean enableDebug) {
+        ENABLE_DEBUG = enableDebug;
     }
 
 
@@ -200,6 +212,16 @@ public final class ServiceConnector implements ServiceListener {
      */
     private void initListeners(Object target) {
         Class targetClass = target.getClass();
+        while (targetClass != Object.class) {
+            initListeners(targetClass, target);
+            targetClass = targetClass.getSuperclass();
+        }
+    }
+
+    /**
+     * Search for callbackmethods annotated with @{@link ServiceConnectionCallback}
+     */
+    private void initListeners(Class targetClass, Object target) {
         Method[] methods = targetClass.getDeclaredMethods();
 
         for (Method method : methods) {
@@ -208,6 +230,7 @@ public final class ServiceConnector implements ServiceListener {
                 Class[] parameters = method.getParameterTypes();
                 if (parameters.length == 2 && parameters[0].isAssignableFrom(String.class) && parameters[1].isAssignableFrom(boolean.class)) {
                     serviceCallbacks.add(new ServiceListenerInfo(method, target));
+                    log("Adding listener " + method.getName());
                 } else {
                     Log.w(TAG, "Expected signature for listener method is (String, boolean");
                 }
@@ -220,6 +243,17 @@ public final class ServiceConnector implements ServiceListener {
      */
     private void initServiceHandlers(Object target, Context context) throws IllegalArgumentException {
         Class targetClass = target.getClass();
+        while (targetClass != Object.class) {
+            initServiceHandlers(targetClass, target, context);
+            targetClass = targetClass.getSuperclass();
+        }
+        connectServices();
+    }
+
+    /**
+     * Search for the fields marked with @{@link ServiceInfo}
+     */
+    private void initServiceHandlers(Class targetClass, Object target, Context context) throws IllegalArgumentException {
         Field[] fields = targetClass.getDeclaredFields();
         for (Field field : fields) {
             ServiceInfo serviceInfo = field.getAnnotation(ServiceInfo.class);
@@ -232,7 +266,6 @@ public final class ServiceConnector implements ServiceListener {
                 }
             }
         }
-        connectServices();
     }
 
     /**
@@ -256,33 +289,86 @@ public final class ServiceConnector implements ServiceListener {
             serviceConnectors = new ArrayList<>();
             serviceInfoMap.put(serviceInfo.serviceIntent(), serviceConnectors);
         }
-        serviceConnectors.add(new ServiceFieldInfo(serviceField, target));
+        ServiceFieldInfo serviceFieldInfo = new ServiceFieldInfo(serviceField, target);
+        serviceConnectors.add(serviceFieldInfo);
+        notifyIfAllreadyConneced(serviceFieldInfo, target, serviceInfo.serviceIntent());
+        log("Adding service field " + serviceField.getName());
+    }
+
+    /**
+     * Sets the field and notify if service is already connected
+     */
+    private void notifyIfAllreadyConneced(ServiceFieldInfo serviceFieldInfo, Object target, String serviceIntent) {
+        ServiceHandler serviceHandler = serviceHandlerMap.get(serviceIntent);
+        if (serviceHandler != null && serviceHandler.isConnected()) {
+            serviceFieldInfo.onServiceConnected(serviceIntent, serviceHandler.getService(), this);
+            //call back listener methods
+            for (ServiceConnectorListener serviceConnectorListener : serviceCallbacks) {
+                if (serviceConnectorListener.isSameTarget(target)) {
+                    serviceConnectorListener.onServiceConnected(serviceIntent, serviceHandler.getService(), this);
+                }
+            }
+        }
     }
 
     /**
      * Connect to services
      */
     private void connectServices() {
+        log("Connecting with services");
         for (ServiceHandler serviceHandler : serviceHandlerMap.values()) {
             serviceHandler.connectToService();
         }
     }
 
     /**
-     * Disconnects all services
+     * Binds to the given target, extracting the service fields to be initialized
+     * and the callback methods to be called.
      */
-    private void disconnectServices() {
-        for (ServiceHandler serviceHandler : serviceHandlerMap.values()) {
-            serviceHandler.destroy();
+    private void bindTarget(final Object target, final Context context) {
+        initListeners(target);
+        initServiceHandlers(target, context);
+    }
+
+    /**
+     * Unbind services from the given target.
+     *
+     * @see #unbind(Object)
+     */
+    private void unbindTarget(Object target) {
+        //remove the service callbacks for same target
+        int listenerSize = serviceCallbacks.size();
+        for (int i = listenerSize - 1; i >= 0; i--) {
+            ServiceListenerInfo serviceListenerInfo = serviceCallbacks.get(i);
+            if (serviceListenerInfo.isSameTarget(target)) {
+                serviceCallbacks.remove(i);
+            }
         }
-        serviceInfoMap.clear();
-        serviceHandlerMap.clear();
-        serviceCallbacks.clear();
+
+        for (String serviceIntent : serviceInfoMap.keySet()) {
+            //reset the service field for the same targets
+            List<ServiceFieldInfo> serviceFieldInfoList = serviceInfoMap.get(serviceIntent);
+            int size = serviceFieldInfoList.size();
+            for (int i = size - 1; i >= 0; i--) {
+                ServiceFieldInfo serviceFieldInfo = serviceFieldInfoList.get(i);
+                if (serviceFieldInfo.isSameTarget(target)) {
+                    serviceFieldInfo.onServiceDisconnected(serviceIntent, this);
+                    serviceFieldInfoList.remove(i);
+                }
+            }
+            if (serviceFieldInfoList.isEmpty()) {
+                serviceHandlerMap.get(serviceIntent)
+                                 .destroy();
+                serviceHandlerMap.remove(serviceIntent);
+                serviceInfoMap.remove(serviceIntent);
+            }
+        }
     }
 
 
     @Override
     public void onServiceConnected(String serviceIntent, ServiceHandler serviceHandler) {
+        log("Service Connected " + serviceIntent);
         IInterface serviceObject = serviceHandler.getService();
         //initialize the fields
         for (ServiceConnectorListener serviceConnectorListener : serviceInfoMap.get(serviceIntent)) {
@@ -302,11 +388,25 @@ public final class ServiceConnector implements ServiceListener {
 
     @Override
     public void onServiceDisconnected(String serviceIntent, ServiceHandler serviceHandler) {
-        for (ServiceConnectorListener serviceConnectorListener : serviceInfoMap.get(serviceIntent)) {
-            serviceConnectorListener.onServiceDisconnected(serviceIntent, this);
+        log("Service DisConnected " + serviceIntent);
+        List<ServiceFieldInfo> serviceFieldInfoList = serviceInfoMap.get(serviceIntent);
+        if (serviceFieldInfoList != null) {
+            for (ServiceConnectorListener serviceConnectorListener : serviceFieldInfoList) {
+                serviceConnectorListener.onServiceDisconnected(serviceIntent, this);
+            }
         }
         for (ServiceConnectorListener serviceConnectorListener : serviceCallbacks) {
             serviceConnectorListener.onServiceDisconnected(serviceIntent, this);
         }
     }
+
+    /**
+     * Logs the message if enabled
+     */
+    private void log(String message) {
+        if (ENABLE_DEBUG) {
+            Log.v(TAG, message);
+        }
+    }
+
 }

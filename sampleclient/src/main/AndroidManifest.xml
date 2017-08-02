@@ -7,8 +7,12 @@
         <activity android:name=".ActivityWithoutServiceConnector">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
 
-                <category android:name="android.intent.category.LAUNCHER" />
+        <activity android:name=".ActivityWithServiceConnector">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
             </intent-filter>
         </activity>
     </application>

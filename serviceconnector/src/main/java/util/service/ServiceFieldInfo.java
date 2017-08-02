@@ -10,7 +10,7 @@ import util.service.annotation.ServiceInfo;
 /**
  * Wraps the field to bbe initialized which was annotated with {@link ServiceInfo}
  */
-class ServiceFieldInfo implements ServiceConnectorListener {
+class ServiceFieldInfo extends ServiceConnectorListener {
 
     private static final String TAG = ServiceConnector.class.getSimpleName();
     private Field serviceField;
@@ -21,6 +21,7 @@ class ServiceFieldInfo implements ServiceConnectorListener {
      * needs to be initializes, the target object
      */
     ServiceFieldInfo(Field serviceField, Object target) {
+        super(target);
         this.serviceField = serviceField;
         this.target = target;
         if (!serviceField.isAccessible()) {
@@ -47,6 +48,5 @@ class ServiceFieldInfo implements ServiceConnectorListener {
         } catch (IllegalAccessException ex) {
             Log.w(TAG, "Unable to set the service object", ex);
         }
-
     }
 }

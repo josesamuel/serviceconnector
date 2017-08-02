@@ -113,7 +113,11 @@ public class ServiceHandler<T extends IInterface> {
             executorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    serviceListener.onServiceConnected(getServiceIntent(), ServiceHandler.this);
+                    try {
+                        serviceListener.onServiceConnected(getServiceIntent(), ServiceHandler.this);
+                    } catch (Exception ex) {
+                        Log.w(TAG, "Callback failed", ex);
+                    }
                 }
             });
         }
@@ -127,7 +131,11 @@ public class ServiceHandler<T extends IInterface> {
             executorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    serviceListener.onServiceDisconnected(getServiceIntent(), ServiceHandler.this);
+                    try {
+                        serviceListener.onServiceDisconnected(getServiceIntent(), ServiceHandler.this);
+                    } catch (Exception ex) {
+                        Log.w(TAG, "Callback failed", ex);
+                    }
                 }
             });
         }
