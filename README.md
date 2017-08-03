@@ -8,12 +8,7 @@ Field and method binding for connecting with Android remote AIDL services.
 Replace the boiler plate service connection codes like - 
 
 ```java
-/**
- * Sample activity that connects with a service and calls a method
- */
 public class ActivityWithoutServiceConnector extends Activity {
-
-    private static final String TAG = ActivityWithoutServiceConnector.class.getSimpleName();
 
     //remote service interface
     private IEchoService mEchoService;
@@ -24,11 +19,8 @@ public class ActivityWithoutServiceConnector extends Activity {
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
+            //get the service 
             mEchoService = IEchoService.Stub.asInterface(service);
-            try {
-                echoMessage("Test");
-            } catch (RemoteException exception) {
-            }
         }
 
         @Override
@@ -48,18 +40,9 @@ public class ActivityWithoutServiceConnector extends Activity {
         bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
-    /**
-     * Call a method on remote interface
-     */
-    private void echoMessage(String message) throws RemoteException {
-        Log.v(TAG, mEchoService.echo(message));
-    }
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity);
+        ...
         conectWithService();
     }
 
@@ -71,33 +54,18 @@ public class ActivityWithoutServiceConnector extends Activity {
 Replace that with
 
 ```java
-/**
- * Sample activity that connects with a service and calls a method
- */
 public class ActivityWithServiceConnector extends Activity {
-
-    private static final String TAG = ActivityWithServiceConnector.class.getSimpleName();
 
     @ServiceInfo(serviceIntent = "util.serviceconnector.ECHO_SERVICE")
     private IEchoService mEchoService;
 
-
     @ServiceConnectionCallback
     public void onServiceConnectionChanged(String serviceIntent, boolean connected) throws RemoteException {
-        echoMessage("Test");
-    }
-
-    /**
-     * Call a method on remote interface
-     */
-    private void echoMessage(String message) throws RemoteException {
-        Log.v(TAG, mEchoService.echo(message));
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity);
+        ...
         ServiceConnector.bind(this, this);
     }
 }
@@ -105,14 +73,15 @@ public class ActivityWithServiceConnector extends Activity {
 
 
 
-Download
+Getting ServiceConnector
 --------
 
 ```groovy
 dependencies {
-  compile 'com.josesamuel:serviceconnector:1.0.0’
+  compile 'com.josesamuel:serviceconnector:1.0.1'
 }
 ```
+
 
 License
 -------
