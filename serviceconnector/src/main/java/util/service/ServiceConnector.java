@@ -33,27 +33,24 @@ import util.service.handler.ServiceListener;
  * <li>
  * Declare the remote IInterface as instance fields, and annotate it with @ServiceInfo
  * ex:
- * <pre>
- * {@code
- *  @literal @ServiceInfo(serviceIntent="com.myintent.MY_SERVICE")
- *      private IMYService myService;
- * }
- * </pre>
+ * <pre><code>
+ *  {@literal @}ServiceInfo(serviceIntent="com.myintent.MY_SERVICE")
+ *   private IMYService myService;
+ * </code></pre>
  * </li>
  * <li>
  * (Optional) If you want to know when the service is connected/disconnected,
  * add callback methods and annotate them with @ServiceConnectionCallback
- * <pre>
- * {@code
- *  @literal @ServiceConnectionCallback
- *      public void onServiceConnectionChanged(String serviceIntent, boolean connected) {
- *      }
- * }
- * </pre>
+ * <pre><code>
+ *  {@literal @}ServiceConnectionCallback
+ *  public void onServiceConnectionChanged(String serviceIntent, boolean connected) {
+ *  }
+ * </code></pre>
  * </li>
  * <li>
- * Call {@link ServiceConnector#bind(Object, Context)}
- * ex:
+ * <pre><code>
+ * Call {@linkplain ServiceConnector#bind(Object, Context)}
+ * </code></pre>
  * </li>
  * </ol>
  *
@@ -115,20 +112,23 @@ public final class ServiceConnector implements ServiceListener {
      * Disconnects from all the services bounded to this target.
      * Any services that are no more bounded to any other targets will
      * be disconnected.
+     * @param target The target used to bind.
      */
     public static void unbind(Object target) {
         getInstance().unbindTarget(target);
     }
 
     /**
-     * Returns true if all the annotated services are connected
+     * Returns true if all the annotated services are connected.
+     *
+     * @return if all services are connected
      */
     public static boolean isAllConnected() {
         return getInstance().isAllServicesConnected();
     }
 
     /**
-     * Returns true if connected with a service of the given intent
+     * Returns true if connected with a service of the given intent.
      *
      * @param serviceIntent The intent of service to check for
      */
@@ -158,6 +158,8 @@ public final class ServiceConnector implements ServiceListener {
 
     /**
      * Call to enable or disable debug logs
+     *
+     * @param enableDebug Enable or disable
      */
     public static void setEnableDebug(boolean enableDebug) {
         ENABLE_DEBUG = enableDebug;

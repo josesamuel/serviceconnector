@@ -15,13 +15,11 @@ import java.lang.annotation.Target;
  * Methods with other signatures are ignored.
  * <p>
  * ex:
- * <pre>
- * {@code
- *  @literal @ServiceConnectionCallback
- *      public void onServiceConnectionChanged(String serviceIntent, boolean connected) {
- *      }
- * }
- * </pre>
+ * <pre><code>
+ *  {@literal @}ServiceConnectionCallback
+ *  public void onServiceConnectionChanged(String serviceIntent, boolean connected) {
+ *  }
+ * </code></pre>
  *
  * @author jsam
  * @see util.service.ServiceConnector
