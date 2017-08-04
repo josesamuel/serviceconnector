@@ -82,6 +82,10 @@ dependencies {
 }
 ```
 
+Java Doc
+--------
+<a href="https://josesamuel.github.io/serviceconnector/javadoc/">ServiceConnector Java Doc</a>
+
 
 License
 -------
