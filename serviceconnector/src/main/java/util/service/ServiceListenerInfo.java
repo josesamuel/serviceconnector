@@ -29,7 +29,7 @@ class ServiceListenerInfo extends ServiceConnectorListener {
 
 
     @Override
-    public void onServiceConnected(String serviceIntent, IInterface serviceObject, ServiceConnector serviceConnector) {
+    public void onServiceConnected(String serviceIntent, Object serviceObject, ServiceConnector serviceConnector) {
         try {
             listenerMethod.invoke(target, serviceIntent, true);
         } catch (Exception ex) {

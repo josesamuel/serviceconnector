@@ -10,7 +10,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 
-import util.serviceconnecor.service.IEchoService;
+import util.serviceconnector.service.IEchoService;
 
 /**
  * Sample activity that connects with a service and calls a method

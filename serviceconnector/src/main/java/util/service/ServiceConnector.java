@@ -5,11 +5,10 @@ import android.content.Context;
 import android.os.IInterface;
 import android.util.Log;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,7 +18,9 @@ import java.util.concurrent.Executors;
 
 import util.service.annotation.ServiceConnectionCallback;
 import util.service.annotation.ServiceInfo;
-import util.service.handler.ServiceHandler;
+import util.service.handler.AbstractServiceHandler;
+import util.service.handler.AidlServiceHandler;
+import util.service.handler.RemoterServiceHandler;
 import util.service.handler.ServiceListener;
 
 
@@ -65,7 +66,7 @@ public final class ServiceConnector implements ServiceListener {
     private static ServiceConnector serviceConnector;
     private ExecutorService executor;
     //map of service intent-servicehandler
-    private Map<String, ServiceHandler> serviceHandlerMap;
+    private Map<String, AbstractServiceHandler> serviceHandlerMap;
     //map of serviceintent-servicefieldinfo
     private Map<String, List<ServiceFieldInfo>> serviceInfoMap;
     private List<ServiceListenerInfo> serviceCallbacks;
@@ -112,6 +113,7 @@ public final class ServiceConnector implements ServiceListener {
      * Disconnects from all the services bounded to this target.
      * Any services that are no more bounded to any other targets will
      * be disconnected.
+     *
      * @param target The target used to bind.
      */
     public static void unbind(Object target) {
@@ -170,7 +172,7 @@ public final class ServiceConnector implements ServiceListener {
      * Blocks for given timeout until connected with the given service
      */
     private void waitForServiceConnected(long timeout, String serviceIntent) throws InterruptedException {
-        ServiceHandler serviceHandler = serviceHandlerMap.get(serviceIntent);
+        AbstractServiceHandler serviceHandler = serviceHandlerMap.get(serviceIntent);
         if (serviceHandler != null) {
             synchronized (serviceHandler) {
                 if (!serviceHandler.isConnected()) {
@@ -193,7 +195,7 @@ public final class ServiceConnector implements ServiceListener {
      * Returns true if connected with all services
      */
     private boolean isAllServicesConnected() {
-        for (ServiceHandler serviceHandler : serviceHandlerMap.values()) {
+        for (AbstractServiceHandler serviceHandler : serviceHandlerMap.values()) {
             if (!serviceHandler.isConnected()) {
                 return false;
             }
@@ -206,7 +208,7 @@ public final class ServiceConnector implements ServiceListener {
      */
     private boolean isServiceConnected(String serviceIntent) {
         return serviceHandlerMap.containsKey(serviceIntent) && serviceHandlerMap.get(serviceIntent)
-                                                                                .isConnected();
+                .isConnected();
     }
 
     /**
@@ -263,20 +265,47 @@ public final class ServiceConnector implements ServiceListener {
                 if (IInterface.class.isAssignableFrom(field.getType())) {
                     addServiceHandler(serviceInfo, (Class<? extends IInterface>) field.getType(), context);
                     addFieldInfo(serviceInfo, field, target);
+                } else if (isRemoter(field.getType())) {
+                    addRemoterServiceHandler(serviceInfo, field.getType(), context);
+                    addFieldInfo(serviceInfo, field, target);
+
                 } else {
-                    throw new IllegalArgumentException(field.getName() + " is not a field of type IInterface");
+                    throw new IllegalArgumentException(field.getName() + " is not a field of type IInterface or Remoter");
                 }
             }
         }
     }
 
     /**
-     * Create {@link ServiceHandler} if neccessary to connect to servie specified by given {@link ServiceInfo}
+     * Checks whether the given class type is annotated with Remoter
+     */
+    private boolean isRemoter(Class fieldType) {
+        boolean remoter = false;
+        try {
+            Class.forName(fieldType.getName() + "_Proxy");
+            remoter = true;
+        } catch (Exception e) {
+        }
+        return remoter;
+    }
+
+    /**
+     * Create {@link AidlServiceHandler} if neccessary to connect to servie specified by given {@link ServiceInfo}
      */
     private void addServiceHandler(ServiceInfo serviceInfo, Class<? extends IInterface> serviceClass, Context context) {
         if (!serviceHandlerMap.containsKey(serviceInfo.serviceIntent())) {
             serviceHandlerMap.put(serviceInfo.serviceIntent(),
-                                  new ServiceHandler<>(context, serviceInfo.serviceIntent(), serviceClass, executor, this, false));
+                    new AidlServiceHandler<>(context, serviceInfo.serviceIntent(), serviceClass, executor, this, false));
+        }
+    }
+
+    /**
+     * Create {@link AidlServiceHandler} if neccessary to connect to servie specified by given {@link ServiceInfo}
+     */
+    private void addRemoterServiceHandler(ServiceInfo serviceInfo, Class serviceClass, Context context) {
+        if (!serviceHandlerMap.containsKey(serviceInfo.serviceIntent())) {
+            serviceHandlerMap.put(serviceInfo.serviceIntent(),
+                    new RemoterServiceHandler<>(context, serviceInfo.serviceIntent(), serviceClass, executor, this, false));
         }
     }
 
@@ -284,7 +313,7 @@ public final class ServiceConnector implements ServiceListener {
      * Keep track of the fields to initialize
      */
     private void addFieldInfo(ServiceInfo serviceInfo, Field serviceField, Object target) {
-        List<ServiceFieldInfo> serviceConnectors ;
+        List<ServiceFieldInfo> serviceConnectors;
         if (serviceInfoMap.containsKey(serviceInfo.serviceIntent())) {
             serviceConnectors = serviceInfoMap.get(serviceInfo.serviceIntent());
         } else {
@@ -301,7 +330,7 @@ public final class ServiceConnector implements ServiceListener {
      * Sets the field and notify if service is already connected
      */
     private void notifyIfAllreadyConneced(ServiceFieldInfo serviceFieldInfo, Object target, String serviceIntent) {
-        ServiceHandler serviceHandler = serviceHandlerMap.get(serviceIntent);
+        AbstractServiceHandler serviceHandler = serviceHandlerMap.get(serviceIntent);
         if (serviceHandler != null && serviceHandler.isConnected()) {
             serviceFieldInfo.onServiceConnected(serviceIntent, serviceHandler.getService(), this);
             //call back listener methods
@@ -318,7 +347,7 @@ public final class ServiceConnector implements ServiceListener {
      */
     private void connectServices() {
         log("Connecting with services");
-        for (ServiceHandler serviceHandler : serviceHandlerMap.values()) {
+        for (AbstractServiceHandler serviceHandler : serviceHandlerMap.values()) {
             serviceHandler.connectToService();
         }
     }
@@ -360,7 +389,7 @@ public final class ServiceConnector implements ServiceListener {
             }
             if (serviceFieldInfoList.isEmpty()) {
                 serviceHandlerMap.get(serviceIntent)
-                                 .destroy();
+                        .destroy();
                 serviceHandlerMap.remove(serviceIntent);
                 serviceInfoMap.remove(serviceIntent);
             }
@@ -369,9 +398,9 @@ public final class ServiceConnector implements ServiceListener {
 
 
     @Override
-    public void onServiceConnected(String serviceIntent, ServiceHandler serviceHandler) {
+    public void onServiceConnected(String serviceIntent, AbstractServiceHandler serviceHandler) {
         log("Service Connected " + serviceIntent);
-        IInterface serviceObject = serviceHandler.getService();
+        Object serviceObject = serviceHandler.getService();
         //initialize the fields
         for (ServiceConnectorListener serviceConnectorListener : serviceInfoMap.get(serviceIntent)) {
             serviceConnectorListener.onServiceConnected(serviceIntent, serviceObject, this);
@@ -389,7 +418,7 @@ public final class ServiceConnector implements ServiceListener {
     }
 
     @Override
-    public void onServiceDisconnected(String serviceIntent, ServiceHandler serviceHandler) {
+    public void onServiceDisconnected(String serviceIntent, AbstractServiceHandler serviceHandler) {
         log("Service DisConnected " + serviceIntent);
         List<ServiceFieldInfo> serviceFieldInfoList = serviceInfoMap.get(serviceIntent);
         if (serviceFieldInfoList != null) {

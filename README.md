@@ -2,7 +2,7 @@ ServiceConnector
 ============
 
 
-Field and method binding for connecting with Android remote AIDL services.
+Field and method binding for connecting with Android remote AIDL (or [**Remoter**](https://josesamuel.github.io/remoter/)) services.
 
 
 Replace the boiler plate service connection codes like - 
@@ -78,7 +78,7 @@ Getting ServiceConnector
 
 ```groovy
 dependencies {
-  compile 'com.josesamuel:serviceconnector:1.0.1'
+  compile 'com.josesamuel:serviceconnector:1.0.2'
 }
 ```
 

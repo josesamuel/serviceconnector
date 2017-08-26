@@ -30,7 +30,7 @@ class ServiceFieldInfo extends ServiceConnectorListener {
     }
 
     @Override
-    public void onServiceConnected(String serviceIntent, IInterface serviceObject, ServiceConnector serviceConnector) {
+    public void onServiceConnected(String serviceIntent, Object serviceObject, ServiceConnector serviceConnector) {
         setServiceObject(serviceObject);
     }
 
@@ -42,7 +42,7 @@ class ServiceFieldInfo extends ServiceConnectorListener {
     /**
      * Sets the field with the given object
      */
-    private void setServiceObject(IInterface serviceObject) {
+    private void setServiceObject(Object serviceObject) {
         try {
             serviceField.set(target, serviceObject);
         } catch (IllegalAccessException ex) {

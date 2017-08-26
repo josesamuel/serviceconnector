@@ -6,7 +6,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 
-import util.serviceconnecor.service.IEchoService;
+import util.serviceconnector.service.IEchoService;
 
 /**
  * Sample echo service

@@ -1,7 +1,7 @@
 package util.service;
 
 import util.service.annotation.ServiceInfo;
-import util.serviceconnecor.service.*;
+import util.serviceconnector.service.*;
 
 import static util.service.ServiceIntents.INTENT_ECHO_SERVICE;
 

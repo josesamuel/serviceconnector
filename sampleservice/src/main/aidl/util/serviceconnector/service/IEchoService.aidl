@@ -1,5 +1,5 @@
 // IEchoService.aidl
-package util.serviceconnecor.service;
+package util.serviceconnector.service;
 
 // Simple echo service
 interface IEchoService {

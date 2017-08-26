@@ -2,7 +2,7 @@ package util.service;
 
 import util.service.annotation.ServiceConnectionCallback;
 import util.service.annotation.ServiceInfo;
-import util.serviceconnecor.service.IEchoService;
+import util.serviceconnector.service.IEchoService;
 
 
 /**

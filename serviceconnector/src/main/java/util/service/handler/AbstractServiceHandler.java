@@ -16,17 +16,15 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Takes care of connecting to a service of the given type
- *
- * @author jsam
+ * Takes care of common service connection logic
  */
-public class ServiceHandler<T extends IInterface> {
+public abstract class AbstractServiceHandler<T> {
 
     private static final String TAG = "ServiceConnector";
     private Context context;
     private boolean connected;
     private T service;
-    private Class serviceStub;
+    private Class<T> serviceClass;
     private String serviceIntent;
     private boolean bound;
     private boolean destroyed;
@@ -39,11 +37,12 @@ public class ServiceHandler<T extends IInterface> {
     private ServiceConnection serviceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder serviceBinder) {
             try {
-                Method asInterfaceMethod = serviceStub.getMethod("asInterface", IBinder.class);
-                synchronized (ServiceHandler.this) {
-                    ServiceHandler.this.service = (T) asInterfaceMethod.invoke(serviceStub, serviceBinder);
-                    connected = true;
-                    ServiceHandler.this.notifyAll();
+                synchronized (AbstractServiceHandler.this) {
+                    AbstractServiceHandler.this.service = initService(serviceBinder);
+                    if (AbstractServiceHandler.this.service != null) {
+                        connected = true;
+                        AbstractServiceHandler.this.notifyAll();
+                    }
                 }
                 serviceBinder.linkToDeath(new IBinder.DeathRecipient() {
                     @Override
@@ -51,18 +50,18 @@ public class ServiceHandler<T extends IInterface> {
                         connectToService();
                     }
                 }, 0);
-                ServiceHandler.this.onServiceConnected();
+                AbstractServiceHandler.this.onServiceConnected();
             } catch (Exception ex) {
                 Log.w(TAG, ex);
             }
         }
 
         public void onServiceDisconnected(ComponentName className) {
-            synchronized (ServiceHandler.this) {
-                ServiceHandler.this.service = null;
+            synchronized (AbstractServiceHandler.this) {
+                AbstractServiceHandler.this.service = null;
                 connected = false;
             }
-            ServiceHandler.this.onServiceDisconnected();
+            AbstractServiceHandler.this.onServiceDisconnected();
             connectToService();
         }
     };
@@ -78,10 +77,10 @@ public class ServiceHandler<T extends IInterface> {
      * @param serviceListener Listener to get callbacks.
      * @param connect         Whether to initiate connection
      */
-    public ServiceHandler(final Context context, final String serviceIntent, Class<? extends IInterface> serviceClass,
-                          ExecutorService executorService, ServiceListener serviceListener, boolean connect) {
+    public AbstractServiceHandler(final Context context, final String serviceIntent, Class<T> serviceClass,
+                                  ExecutorService executorService, ServiceListener serviceListener, boolean connect) {
         this.context = context;
-        this.serviceStub = getStub(serviceClass);
+        this.serviceClass = serviceClass;
         this.serviceIntent = serviceIntent;
         this.executorService = executorService;
         this.serviceListener = serviceListener;
@@ -114,7 +113,7 @@ public class ServiceHandler<T extends IInterface> {
                 @Override
                 public void run() {
                     try {
-                        serviceListener.onServiceConnected(getServiceIntent(), ServiceHandler.this);
+                        serviceListener.onServiceConnected(getServiceIntent(), AbstractServiceHandler.this);
                     } catch (Exception ex) {
                         Log.w(TAG, "Callback failed", ex);
                     }
@@ -132,7 +131,7 @@ public class ServiceHandler<T extends IInterface> {
                 @Override
                 public void run() {
                     try {
-                        serviceListener.onServiceDisconnected(getServiceIntent(), ServiceHandler.this);
+                        serviceListener.onServiceDisconnected(getServiceIntent(), AbstractServiceHandler.this);
                     } catch (Exception ex) {
                         Log.w(TAG, "Callback failed", ex);
                     }
@@ -177,7 +176,6 @@ public class ServiceHandler<T extends IInterface> {
         }
     }
 
-
     /**
      * Creates the intent to use to connect to service.
      */
@@ -198,15 +196,18 @@ public class ServiceHandler<T extends IInterface> {
         return explicitIntent;
     }
 
-    private Class<? extends IInterface> getStub(Class serviceClass) {
-        Class[] subClasses = serviceClass.getDeclaredClasses();
-        for (Class subClass : subClasses) {
-            if (subClass.getSimpleName()
-                        .equals("Stub")) {
-                return subClass;
-            }
-        }
-        return null;
+
+    /**
+     * Initialize the service from the binder
+     */
+    protected abstract T initService(IBinder serviceBinder);
+
+    /**
+     * Returns the Class of the service type that this wraps
+     */
+    protected Class<T> getServiceClass() {
+        return serviceClass;
     }
+
 
 }

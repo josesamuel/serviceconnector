@@ -3,7 +3,7 @@ package util.service.handler;
 /**
  * Listener to receive service connection call backs
  *
- * @see ServiceHandler
+ * @see AidlServiceHandler
  */
 public interface ServiceListener {
 
@@ -12,12 +12,12 @@ public interface ServiceListener {
      *
      * @param serviceIntent The intent of the service connected
      */
-    void onServiceConnected(String serviceIntent, ServiceHandler serviceHandler);
+    void onServiceConnected(String serviceIntent, AbstractServiceHandler serviceHandler);
 
     /**
      * Called when service is dis connected
      *
      * @param serviceIntent The intent of the service dis connected
      */
-    void onServiceDisconnected(String serviceIntent, ServiceHandler serviceHandler);
+    void onServiceDisconnected(String serviceIntent, AbstractServiceHandler serviceHandler);
 }

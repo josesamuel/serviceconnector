@@ -25,7 +25,7 @@ abstract class ServiceConnectorListener {
      * @param serviceObject    Service Object
      * @param serviceConnector ServiceConnector
      */
-    abstract void onServiceConnected(String serviceIntent, IInterface serviceObject, ServiceConnector serviceConnector);
+    abstract void onServiceConnected(String serviceIntent, Object serviceObject, ServiceConnector serviceConnector);
 
     /**
      * Called when service is disconnected

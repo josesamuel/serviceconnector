@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.os.RemoteException;
 
-import util.serviceconnecor.service.IMathService;
+import util.serviceconnector.service.IMathService;
 
 /**
  * Sample math service

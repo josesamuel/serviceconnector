@@ -29,4 +29,6 @@ dependencies {
     })
     testCompile 'junit:junit:4.12'
     compile project(':serviceconnector')
+    compile 'com.josesamuel:remoter-annotations:1.0.0'
+    annotationProcessor 'com.josesamuel:remoter:1.0.0'
 }

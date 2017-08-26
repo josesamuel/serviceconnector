@@ -1,5 +1,5 @@
 // IMathService.aidl
-package util.serviceconnecor.service;
+package util.serviceconnector.service;
 
 // Simple Math service
 interface IMathService {
