@@ -3,7 +3,6 @@ apply from:  rootProject.file('gradle/gradle-mvn-push.gradle')
 
 android {
     compileSdkVersion 26
-    buildToolsVersion "26.0.0"
 
     defaultConfig {
         minSdkVersion 8
