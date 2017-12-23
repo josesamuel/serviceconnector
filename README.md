@@ -78,7 +78,7 @@ Getting ServiceConnector
 
 ```groovy
 dependencies {
-  compile 'com.josesamuel:serviceconnector:1.0.2'
+  compile 'com.josesamuel:serviceconnector:1.0.3'
 }
 ```
 

@@ -168,7 +168,6 @@ public abstract class AbstractServiceHandler<T> {
                 public void run() {
                     if (!destroyed) {
                         Intent sIntent = createExplicitFromImplicitIntent(context, new Intent(serviceIntent));
-                        context.startService(sIntent);
                         bound = context.bindService(sIntent, serviceConnection, Context.BIND_AUTO_CREATE);
                     }
                 }
