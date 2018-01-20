@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import util.service.annotation.ServiceConnectionCallback;
+import util.service.annotation.ServiceConnectionFailureCallback;
 import util.service.annotation.ServiceInfo;
 import util.service.handler.AbstractServiceHandler;
 import util.service.handler.AidlServiceHandler;
@@ -70,6 +71,7 @@ public final class ServiceConnector implements ServiceListener {
     //map of serviceintent-servicefieldinfo
     private Map<String, List<ServiceFieldInfo>> serviceInfoMap;
     private List<ServiceListenerInfo> serviceCallbacks;
+    private List<ServiceListenerInfo> serviceFailtureCallbacks;
 
 
     //*************************************************************
@@ -82,6 +84,7 @@ public final class ServiceConnector implements ServiceListener {
         serviceInfoMap = new ConcurrentHashMap<>();
         serviceHandlerMap = new ConcurrentHashMap<>();
         serviceCallbacks = new CopyOnWriteArrayList<>();
+        serviceFailtureCallbacks = new CopyOnWriteArrayList<>();
     }
 
     /**
@@ -234,6 +237,17 @@ public final class ServiceConnector implements ServiceListener {
                 Class[] parameters = method.getParameterTypes();
                 if (parameters.length == 2 && parameters[0].isAssignableFrom(String.class) && parameters[1].isAssignableFrom(boolean.class)) {
                     serviceCallbacks.add(new ServiceListenerInfo(method, target));
+                    log("Adding listener " + method.getName());
+                } else {
+                    Log.w(TAG, "Expected signature for listener method is (String, boolean");
+                }
+            }
+
+            ServiceConnectionFailureCallback failureInfo = method.getAnnotation(ServiceConnectionFailureCallback.class);
+            if (failureInfo != null) {
+                Class[] parameters = method.getParameterTypes();
+                if (parameters.length == 2 && parameters[0].isAssignableFrom(String.class) && parameters[1].isAssignableFrom(Exception.class)) {
+                    serviceFailtureCallbacks.add(new ServiceListenerInfo(method, target));
                     log("Adding listener " + method.getName());
                 } else {
                     Log.w(TAG, "Expected signature for listener method is (String, boolean");
@@ -428,6 +442,13 @@ public final class ServiceConnector implements ServiceListener {
         }
         for (ServiceConnectorListener serviceConnectorListener : serviceCallbacks) {
             serviceConnectorListener.onServiceDisconnected(serviceIntent, this);
+        }
+    }
+
+    @Override
+    public void onServiceConnectionFailed(String serviceIntent, Exception exception) {
+        for (ServiceConnectorListener serviceConnectorListener : serviceFailtureCallbacks) {
+            serviceConnectorListener.onServiceConnectionFailed(serviceIntent, exception);
         }
     }
 

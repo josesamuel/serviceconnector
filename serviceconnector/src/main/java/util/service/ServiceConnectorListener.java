@@ -36,6 +36,11 @@ abstract class ServiceConnectorListener {
     abstract void onServiceDisconnected(String serviceIntent, ServiceConnector serviceConnector);
 
     /**
+     * Called when the service bind fails
+     */
+    abstract void onServiceConnectionFailed(String serviceIntent, Exception exception);
+
+    /**
      * Returns if the given target is same as the target used by this
      */
     boolean isSameTarget(Object target) {

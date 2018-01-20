@@ -39,6 +39,11 @@ class ServiceFieldInfo extends ServiceConnectorListener {
         setServiceObject(null);
     }
 
+    @Override
+    void onServiceConnectionFailed(String serviceIntent, Exception exception) {
+
+    }
+
     /**
      * Sets the field with the given object
      */

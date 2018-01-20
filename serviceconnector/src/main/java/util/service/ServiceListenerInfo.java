@@ -45,4 +45,13 @@ class ServiceListenerInfo extends ServiceConnectorListener {
             Log.w(TAG, "Unable to call the listener method", ex);
         }
     }
+
+    @Override
+    public void onServiceConnectionFailed(String serviceIntent, Exception exception) {
+        try {
+            listenerMethod.invoke(target, serviceIntent, exception);
+        } catch (Exception ex) {
+            Log.w(TAG, "Unable to call the listener method", ex);
+        }
+    }
 }

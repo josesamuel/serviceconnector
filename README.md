@@ -78,7 +78,7 @@ Getting ServiceConnector
 
 ```groovy
 dependencies {
-  compile 'com.josesamuel:serviceconnector:1.0.3'
+  compile 'com.josesamuel:serviceconnector:1.0.4'
 }
 ```
 
@@ -90,7 +90,7 @@ Java Doc
 License
 -------
 
-    Copyright 2017 Joseph Samuel
+    Copyright 2018 Joseph Samuel
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
