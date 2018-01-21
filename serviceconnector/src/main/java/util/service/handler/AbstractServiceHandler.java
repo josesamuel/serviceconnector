@@ -11,7 +11,6 @@ import android.os.IBinder;
 import android.os.IInterface;
 import android.util.Log;
 
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -167,8 +166,16 @@ public abstract class AbstractServiceHandler<T> {
                 @Override
                 public void run() {
                     if (!destroyed) {
-                        Intent sIntent = createExplicitFromImplicitIntent(context, new Intent(serviceIntent));
-                        bound = context.bindService(sIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+                        try {
+                            Intent sIntent = createExplicitFromImplicitIntent(context, new Intent(serviceIntent));
+                            bound = context.bindService(sIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+                        } catch (Exception ex) {
+                            try {
+                                serviceListener.onServiceConnectionFailed(getServiceIntent(), ex);
+                            } catch (Exception ignored) {
+                                Log.w(TAG, "Callback failed", ex);
+                            }
+                        }
                     }
                 }
             });
