@@ -381,12 +381,22 @@ public final class ServiceConnector implements ServiceListener {
      * @see #unbind(Object)
      */
     private void unbindTarget(Object target) {
+        int listenerSize;
+
         //remove the service callbacks for same target
-        int listenerSize = serviceCallbacks.size();
+		listenerSize = serviceCallbacks.size();
         for (int i = listenerSize - 1; i >= 0; i--) {
             ServiceListenerInfo serviceListenerInfo = serviceCallbacks.get(i);
             if (serviceListenerInfo.isSameTarget(target)) {
                 serviceCallbacks.remove(i);
+            }
+        }
+        //remove the failure callbacks for same target
+        listenerSize = serviceFailtureCallbacks.size();
+        for (int i = listenerSize - 1; i >= 0; i--) {
+            ServiceListenerInfo serviceListenerInfo = serviceFailtureCallbacks.get(i);
+            if (serviceListenerInfo.isSameTarget(target)) {
+                serviceFailtureCallbacks.remove(i);
             }
         }
 
